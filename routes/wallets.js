@@ -9,6 +9,40 @@ const router = express.Router();
 // ADMIN-ONLY ROUTES
 // ============================================================
 
+// Get current user's wallet
+router.get('/my', authenticateToken, async (req, res) => {
+  try {
+    const wallet = await prisma.wallet.findFirst({
+      where: { userId: req.user.userId },
+      include: {
+        transactions: {
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        }
+      }
+    });
+
+    if (!wallet) {
+      // Create wallet if not exists
+      const newWallet = await prisma.wallet.create({
+        data: {
+          userId: req.user.userId,
+          balance: 0
+        },
+        include: {
+          transactions: []
+        }
+      });
+      return res.json(newWallet);
+    }
+
+    res.json(wallet);
+  } catch (error) {
+    console.error('Get my wallet error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get all wallets (admin only)
 router.get('/', requireRole('ADMIN'), async (req, res) => {
   try {

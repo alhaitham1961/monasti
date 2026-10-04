@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const winston = require('winston');
 const path = require('path');
 require('dotenv').config();
+const { authenticateToken } = require('./middleware/auth');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -23,121 +24,60 @@ const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 const currencyRoutes = require('./routes/currency');
 
-// Import middleware
-const { authenticateToken } = require('./middleware/auth');
-const { errorHandler } = require('./middleware/errorHandler');
-const { validateInput } = require('./middleware/validation');
-
-// Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Logger configuration
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
-    new winston.transports.Console({
-      format: winston.format.simple()
-    })
-  ],
-});
 
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "'unsafe-hashes'"],
-      scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'", 'http://localhost:3000'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true,
-  },
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "ws:", "wss:"]
+    }
+  }
 }));
 
-// CORS configuration
-const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 
 // Rate limiting
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per windowMs
-  message: 'Too many login attempts, please try again later.',
+  max: 5, // limit each IP to 5 login requests per windowMs
+  message: 'Too many login attempts, please try again later'
 });
 
-// Strict rate limiting for sensitive endpoints (admin, payments)
-const adminLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // Limit each IP to 20 requests per hour
-  message: 'Too many admin requests, please try again later.',
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many API requests, please try again later'
 });
 
-const paymentLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // Limit each IP to 10 payment attempts per hour
-  message: 'Too many payment attempts, please try again later.',
-});
-
-// Body parsing middleware
+// Middleware
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan('combined'));
+app.use('/api', apiLimiter);
 
-// Request logging
-app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
-
-// Apply rate limiting to all API routes
-app.use('/api/', apiLimiter);
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
 });
 
-// Serve static frontend files
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve index.html for root
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
+// API routes
 // Public routes
 app.use('/api/auth', loginLimiter, authRoutes);
 app.use('/api/coaches', coachRoutes);
@@ -157,17 +97,20 @@ app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/currency', authenticateToken, currencyRoutes);
 
 // Error handling middleware
-app.use(errorHandler);
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
 // Start server
 app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
   console.log(`🚀 monasti server running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
 });
 
 module.exports = app;

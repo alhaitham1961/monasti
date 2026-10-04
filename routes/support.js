@@ -6,6 +6,152 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 // ============================================================
+// USER ROUTES
+// ============================================================
+
+// Get current user's support tickets
+router.get('/my', authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, priority } = req.query;
+    const skip = (page - 1) * limit;
+
+    const where = { userId: req.user.userId };
+    if (status) {
+      where.status = status;
+    }
+    if (priority) {
+      where.priority = priority;
+    }
+
+    const [tickets, total] = await Promise.all([
+      prisma.supportTicket.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          },
+          replies: {
+            orderBy: { createdAt: 'desc' }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: parseInt(skip),
+        take: parseInt(limit)
+      }),
+      prisma.supportTicket.count({ where })
+    ]);
+
+    res.json({
+      tickets,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get my support tickets error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create new support ticket
+router.post('/my', authenticateToken, [
+  body('title').notEmpty(),
+  body('message').notEmpty(),
+  body('priority').isIn(['LOW', 'MEDIUM', 'HIGH'])
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: errors.array()
+      });
+    }
+
+    const { title, message, priority } = req.body;
+
+    const ticket = await prisma.supportTicket.create({
+      data: {
+        userId: req.user.userId,
+        title,
+        message,
+        priority,
+        status: 'OPEN'
+      },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    res.status(201).json({
+      message: 'Support ticket created successfully',
+      ticket
+    });
+  } catch (error) {
+    console.error('Create support ticket error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reply to support ticket
+router.post('/:id/reply', authenticateToken, [
+  body('message').notEmpty()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: errors.array()
+      });
+    }
+
+    const { message } = req.body;
+
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Support ticket not found' });
+    }
+
+    if (ticket.userId !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const reply = await prisma.supportReply.create({
+      data: {
+        ticketId: ticket.id,
+        userId: req.user.userId,
+        message
+      }
+    });
+
+    res.json({
+      message: 'Reply added successfully',
+      reply
+    });
+  } catch (error) {
+    console.error('Reply to support ticket error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================
 // ADMIN-ONLY ROUTES
 // ============================================================
 

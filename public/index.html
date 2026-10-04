@@ -106,6 +106,28 @@
     .payment-card .icon { font-size: 2rem; margin-bottom: 0.5rem; }
     .payment-card .name { font-weight: 700; font-size: 0.95rem; }
     .payment-card .country { color: var(--text-muted); font-size: 0.8rem; }
+    .booking-container { max-width: 560px; margin: 0 auto; }
+    .booking-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow); }
+    .booking-card h3 { margin-bottom: 0.75rem; }
+    .form-input { width: 100%; padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--foreground); font-size: 1rem; margin-bottom: 0.75rem; }
+    .booking-info { background: var(--bg); border-radius: 10px; padding: 1rem; margin: 0.75rem 0; font-size: 0.95rem; }
+    .booking-info .price { font-size: 1.3rem; font-weight: 800; color: var(--primary); }
+    .wallet-number { background: var(--bg); border: 2px dashed var(--primary); border-radius: 12px; padding: 1.25rem; text-align: center; font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; margin: 1rem 0; color: var(--primary); }
+    .zaincash-instructions { text-align: center; }
+    .admin-container { max-width: 800px; margin: 0 auto; }
+    .admin-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow); }
+    .admin-card h3 { margin-bottom: 1rem; }
+    .pending-payments { margin: 1rem 0; }
+    .payment-item { background: var(--bg); border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; border: 1px solid var(--border); }
+    .payment-item .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .payment-item .amount { font-weight: 800; color: var(--primary); font-size: 1.1rem; }
+    .payment-item .method { background: var(--primary); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; }
+    .payment-item .details { font-size: 0.9rem; color: var(--text-muted); }
+    .payment-item .actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+    .payment-item .btn { padding: 0.5rem 1rem; font-size: 0.9rem; }
+    .loading { text-align: center; padding: 2rem; color: var(--text-muted); }
+    .btn-secondary { background: var(--secondary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+    .btn-secondary:hover { background: var(--secondary-dark); transform: translateY(-2px); }
     .cta { background: linear-gradient(135deg, #1e3a8a, #2563eb); border-radius: 20px; padding: 4rem 2rem; text-align: center; color: white; margin: 3rem 2rem; }
     .cta h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 1rem; }
     .cta p { color: rgba(255,255,255,0.9); margin-bottom: 2rem; }
@@ -224,6 +246,57 @@
       <div class="payment-card"><div class="icon">🌍</div><div class="name">Apple Pay</div><div class="country">دولي</div></div>
       <div class="payment-card"><div class="icon">🌍</div><div class="name">Google Pay</div><div class="country">دولي</div></div>
       <div class="payment-card"><div class="icon">💳</div><div class="name">بطاقات</div><div class="country">دولي</div></div>
+    </div>
+  </section>
+  <section class="section" id="booking">
+    <h2 class="section-title">احجز جلستك الآن</h2>
+    <p class="section-subtitle">اختر الجلسة وطريقة الدفع، ثم أكمل الحجز</p>
+    <div class="booking-container">
+      <div class="booking-card">
+        <h3>اختر الجلسة</h3>
+        <select id="bookingSession" class="form-input">
+          <option value="">— اختر جلسة —</option>
+        </select>
+        <div class="booking-info" id="bookingInfo"></div>
+        <h3 style="margin-top:1.5rem;">طريقة الدفع</h3>
+        <select id="bookingMethod" class="form-input">
+          <option value="ZAINCASH">🇮🇶 ZainCash (العراق)</option>
+          <option value="FASTPAY">💳 FastPay (العراق)</option>
+          <option value="KICARD">💳 KiCard (العراق)</option>
+          <option value="STC_PAY">🇸🇦 STC Pay (السعودية)</option>
+          <option value="NAPAY">🇦🇪 NAPAY (الإمارات)</option>
+          <option value="VODAFONE_CASH">🇪🇬 Vodafone Cash (مصر)</option>
+          <option value="CARD">💳 بطاقة ائتمان</option>
+        </select>
+        <button class="btn btn-primary" id="btnBook" style="width:100%;margin-top:1rem;">احجز الآن</button>
+        <div class="error-msg" id="bookingError"></div>
+      </div>
+    </div>
+  </section>
+  <div class="modal" id="zaincashModal">
+    <div class="modal-content">
+      <button class="modal-close" id="closeZaincashModal">✕</button>
+      <h2>💳 الدفع عبر ZainCash</h2>
+      <div class="zaincash-instructions">
+        <p>يرجى تحويل المبلغ إلى محفظة ZainCash التالية:</p>
+        <div class="wallet-number">9647802851933</div>
+        <p style="margin-top:1rem;color:var(--text-muted);font-size:0.9rem;">بعد إتمام التحويل، اضغط "أرسلت المبلغ" وسيقوم المشرف بتأكيد الدفع.</p>
+      </div>
+      <button class="btn btn-primary" id="btnConfirmZaincash" style="width:100%;margin-top:1rem;">✅ أرسلت المبلغ</button>
+      <div class="error-msg" id="zaincashError"></div>
+    </div>
+  </div>
+  <section class="section" id="admin">
+    <h2 class="section-title">لوحة الإدارة</h2>
+    <p class="section-subtitle">إدارة الدفعات المعلقة والتحقق منها</p>
+    <div class="admin-container">
+      <div class="admin-card">
+        <h3>الدفعات المعلقة للتحقق</h3>
+        <div id="pendingPayments">
+          <div class="loading">جاري تحميل الدفعات...</div>
+        </div>
+        <button class="btn btn-secondary" id="btnRefreshPayments">🔄 تحديث</button>
+      </div>
     </div>
   </section>
   <div class="cta">
@@ -357,6 +430,236 @@
     document.getElementById('switchToLogin').addEventListener('click', () => switchModal('login'));
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
+    
+    // Booking functionality
+    async function loadSessions() {
+      try {
+        const res = await fetch(API + '/sessions');
+        const data = await res.json();
+        const select = document.getElementById('bookingSession');
+        select.innerHTML = '<option value="">— اختر جلسة —</option>';
+        data.sessions.forEach(session => {
+          const option = document.createElement('option');
+          option.value = session.id;
+          option.textContent = `${session.title} - ${new Date(session.startTime).toLocaleDateString('ar-IQ')}`;
+          select.appendChild(option);
+        });
+      } catch (e) {
+        console.error('Error loading sessions:', e);
+      }
+    }
+    
+    function showBookingInfo() {
+      const sessionId = document.getElementById('bookingSession').value;
+      const info = document.getElementById('bookingInfo');
+      if (!sessionId) {
+        info.innerHTML = '';
+        return;
+      }
+      // Get session details
+      fetch(API + '/sessions/' + sessionId)
+        .then(res => res.json())
+        .then(data => {
+          const session = data.session;
+          info.innerHTML = `
+            <div><strong>العنوان:</strong> ${session.title}</div>
+            <div><strong>المدة:</strong> ${session.duration} دقيقة</div>
+            <div><strong>السعر:</strong> <span class="price">${session.price} ${session.currency === 'IQD' ? 'د.ع' : '$'}</span></div>
+            <div><strong>المدرب:</strong> ${session.coach.firstName} ${session.coach.lastName}</div>
+          `;
+        })
+        .catch(e => {
+          info.innerHTML = '<div style="color:red;">تعذر تحميل تفاصيل الجلسة</div>';
+        });
+    }
+    
+    async function handleBooking(event) {
+      event.preventDefault();
+      const sessionId = document.getElementById('bookingSession').value;
+      const method = document.getElementById('bookingMethod').value;
+      const errorEl = document.getElementById('bookingError');
+      errorEl.classList.remove('show');
+      
+      if (!sessionId) {
+        errorEl.textContent = 'الرجاء اختيار جلسة';
+        errorEl.classList.add('show');
+        return;
+      }
+      
+      try {
+        const res = await fetch(API + '/bookings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({ sessionId, paymentMethod: method })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errorEl.textContent = data.error || 'فشل إنشاء الحجز';
+          errorEl.classList.add('show');
+          return;
+        }
+        
+        // Show ZainCash modal if method is ZainCash
+        if (method === 'ZAINCASH') {
+          openModal('zaincash');
+        } else {
+          alert('تم إنشاء الحجز بنجاح! سيتم التواصل معك قريبًا.');
+        }
+        
+        // Reset form
+        document.getElementById('bookingSession').value = '';
+        document.getElementById('bookingMethod').value = 'ZAINCASH';
+        document.getElementById('bookingInfo').innerHTML = '';
+      } catch (e) {
+        errorEl.textContent = 'خطأ في الاتصال بالخادم';
+        errorEl.classList.add('show');
+      }
+    }
+    
+    async function handleZaincashConfirm() {
+      const errorEl = document.getElementById('zaincashError');
+      errorEl.classList.remove('show');
+      
+      try {
+        // Get the last booking for this user
+        const res = await fetch(API + '/bookings', {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        });
+        const data = await res.json();
+        const booking = data.bookings.find(b => b.paymentMethod === 'ZAINCASH' && b.status === 'PENDING');
+        
+        if (!booking) {
+          errorEl.textContent = 'لم يتم العثور على حجز قيد الانتظار';
+          errorEl.classList.add('show');
+          return;
+        }
+        
+        // Create payment
+        const paymentRes = await fetch(API + '/payments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({
+            bookingId: booking.id,
+            method: 'ZAINCASH',
+            amount: booking.amount
+          })
+        });
+        
+        const paymentData = await paymentRes.json();
+        if (!paymentRes.ok) {
+          errorEl.textContent = paymentData.error || 'فشل إنشاء الدفع';
+          errorEl.classList.add('show');
+          return;
+        }
+        
+        alert('تم تأكيد إرسال المبلغ! سيقوم المشرف بالتحقق من الدفع قريبًا.');
+        closeModal('zaincashModal');
+      } catch (e) {
+        errorEl.textContent = 'خطأ في الاتصال بالخادم';
+        errorEl.classList.add('show');
+      }
+    }
+    
+    // Initialize booking functionality
+    loadSessions();
+    document.getElementById('bookingSession').addEventListener('change', showBookingInfo);
+    document.getElementById('btnBook').addEventListener('click', handleBooking);
+    document.getElementById('closeZaincashModal').addEventListener('click', () => closeModal('zaincashModal'));
+    document.getElementById('btnConfirmZaincash').addEventListener('click', handleZaincashConfirm);
+    
+    // Admin functionality
+    async function loadPendingPayments() {
+      const container = document.getElementById('pendingPayments');
+      container.innerHTML = '<div class="loading">جاري تحميل الدفعات...</div>';
+      
+      try {
+        const res = await fetch(API + '/admin/payments/pending', {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        });
+        
+        if (!res.ok) {
+          container.innerHTML = '<div style="color:red;">لا توجد صلاحيات للوصول لواجهة الإدارة</div>';
+          return;
+        }
+        
+        const data = await res.json();
+        container.innerHTML = '';
+        
+        if (data.payments.length === 0) {
+          container.innerHTML = '<div style="text-align:center;color:var(--text-muted);">لا توجد دفعات معلقة</div>';
+          return;
+        }
+        
+        data.payments.forEach(payment => {
+          const paymentEl = document.createElement('div');
+          paymentEl.className = 'payment-item';
+          paymentEl.innerHTML = `
+            <div class="header">
+              <div class="amount">${payment.amount} ${payment.booking.session.currency === 'IQD' ? 'د.ع' : '$'}</div>
+              <div class="method">${payment.method}</div>
+            </div>
+            <div class="details">
+              <div>الجلسة: ${payment.booking.session.title}</div>
+              <div>المدرب: ${payment.booking.session.coach.firstName} ${payment.booking.session.coach.lastName}</div>
+              <div>المتدرب: ${payment.booking.trainee.firstName} ${payment.booking.trainee.lastName}</div>
+              <div>التاريخ: ${new Date(payment.createdAt).toLocaleDateString('ar-IQ')}</div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-success" onclick="verifyPayment('${payment.id}', 'COMPLETED')">✅ تأكيد</button>
+              <button class="btn btn-danger" onclick="verifyPayment('${payment.id}', 'FAILED')">❌ رفض</button>
+            </div>
+          `;
+          container.appendChild(paymentEl);
+        });
+        
+      } catch (e) {
+        container.innerHTML = '<div style="color:red;">خطأ في تحميل الدفعات</div>';
+      }
+    }
+    
+    async function verifyPayment(paymentId, status) {
+      const notes = status === 'FAILED' ? prompt('أدخل سبب الرفض:') : '';
+      
+      try {
+        const res = await fetch(API + `/admin/payments/${paymentId}/verify`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({
+            status,
+            notes: notes || ''
+          })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'فشل التحقق من الدفع');
+          return;
+        }
+        
+        alert(`تم ${status === 'COMPLETED' ? 'تأكيد' : 'رفض'} الدفع بنجاح!`);
+        loadPendingPayments();
+        
+      } catch (e) {
+        alert('خطأ في الاتصال بالخادم');
+      }
+    }
+    
+    // Initialize admin functionality
+    loadPendingPayments();
+    document.getElementById('btnRefreshPayments').addEventListener('click', loadPendingPayments);
   </script>
 </body>
 </html>

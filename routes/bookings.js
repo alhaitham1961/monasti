@@ -169,7 +169,10 @@ router.post('/', [
 
     // Calculate commission (10% for coach)
     const commission = session.price * 0.1;
-    const amount = session.price - commission;
+    // Amount is the FULL price the trainee pays
+    const amount = session.price;
+    // Coach earnings = price - commission
+    const coachEarnings = session.price - commission;
 
     // Create booking
     const booking = await prisma.booking.create({
@@ -179,7 +182,8 @@ router.post('/', [
         status: 'PENDING',
         paymentMethod,
         amount,
-        commission
+        commission,
+        coachEarnings
       },
       include: {
         session: {

@@ -6,6 +6,73 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 // ============================================================
+// USER ROUTES
+// ============================================================
+
+// Get current user's notifications
+router.get('/my', authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, isRead } = req.query;
+    const skip = (page - 1) * limit;
+
+    const where = { userId: req.user.userId };
+    if (isRead !== undefined) {
+      where.isRead = isRead === 'true';
+    }
+
+    const [notifications, total] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: parseInt(skip),
+        take: parseInt(limit)
+      }),
+      prisma.notification.count({ where })
+    ]);
+
+    res.json({
+      notifications,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get my notifications error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mark notification as read
+router.patch('/:id/read', authenticateToken, async (req, res) => {
+  try {
+    const notification = await prisma.notification.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    if (notification.userId !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const updated = await prisma.notification.update({
+      where: { id: req.params.id },
+      data: { isRead: true }
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Mark notification as read error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================
 // ADMIN-ONLY ROUTES
 // ============================================================
 

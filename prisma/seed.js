@@ -43,13 +43,14 @@ const seedUsers = [
 const seedCoaches = [
   {
     title: 'مدرب تطوير الأعمال',
-    specialization: ['تطوير الأعمال', 'ريادة الأعمال', 'التسويق الرقمي'],
+    specialization: JSON.stringify(['تطوير الأعمال', 'ريادة الأعمال', 'التسويق الرقمي']),
     experience: 5,
     bio: 'مدرب متخصص في تطوير الأعمال وريادة المشاريع الناشئة',
     hourlyRate: 50,
     isVerified: true,
     rating: 4.8,
-    reviewCount: 25,
+    reviewCount: 15,
+    coachEarnings: 45
   },
 ];
 
@@ -132,10 +133,19 @@ async function main() {
 
   // Create profiles
   console.log('Creating profiles...');
+  // Create profile only for the coach
   await prisma.profile.create({
     data: {
       userId: coachUser.id,
-      ...seedCoaches[0],
+      title: seedCoaches[0].title,
+      specialization: seedCoaches[0].specialization,
+      certifications: JSON.stringify(['PMP', 'MBA']),
+      experience: seedCoaches[0].experience,
+      bio: seedCoaches[0].bio,
+      hourlyRate: seedCoaches[0].hourlyRate,
+      isVerified: seedCoaches[0].isVerified,
+      rating: seedCoaches[0].rating,
+      reviewCount: seedCoaches[0].reviewCount,
     },
   });
 

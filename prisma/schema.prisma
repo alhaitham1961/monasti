@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -23,7 +23,7 @@ model User {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  role        Role     @default(TRAINEE)
+  role        String   @default("TRAINEE") // TRAINEE, COACH, ADMIN
   isOwner     Boolean  @default(false)
   permissions String   @default("[]")  // JSON array of granted permissions
   currency    String   @default("IQD")  // IQD or USD
@@ -52,10 +52,10 @@ model Profile {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title       String?
-  specialization String[]
+  specialization String  // JSON array as string
   experience  Int?
   education   String?
-  certifications String[]
+  certifications String  // JSON array as string
   hourlyRate  Float?
   bio         String?
   location    String?
@@ -95,7 +95,7 @@ model Transaction {
   wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   amount      Float
-  type        TransactionType @default(CREDIT)
+  type        String   @default("CREDIT") // CREDIT, DEBIT
   description String?
 
   createdAt   DateTime @default(now())
@@ -135,7 +135,7 @@ model Session {
   coachId     String
   coach       User     @relation(fields: [coachId], references: [id])
 
-  status      SessionStatus @default(SCHEDULED)
+  status      String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW
   startTime   DateTime
   endTime     DateTime
 
@@ -157,10 +157,11 @@ model Booking {
   traineeId   String
   trainee     User     @relation(fields: [traineeId], references: [id])
 
-  status      BookingStatus @default(PENDING)
-  paymentMethod PaymentMethod
-  amount      Float
-  commission  Float
+  status      String   @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED, REFUNDED
+  paymentMethod String
+  amount      Int
+  commission  Int
+  coachEarnings Int
   notes       String?
 
   createdAt   DateTime @default(now())
@@ -178,12 +179,12 @@ model Payment {
   bookingId   String
   booking     Booking  @relation(fields: [bookingId], references: [id])
 
-  amount      Float
-  method      PaymentMethod
-  status      PaymentStatus @default(PENDING)
+  amount      Int
+  method      String
+  status      String   @default("PENDING") // PENDING, COMPLETED, FAILED, REFUNDED, CANCELLED
   transactionId String?
   externalId String?
-  metadata    Json?
+  metadata    String?  // JSON as string
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -219,14 +220,14 @@ model Course {
   price       Float
   currency    String   @default("IQD")
   duration    Int      // in minutes
-  level       CourseLevel @default(BEGINNER)
+  level       String   @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
   isPublished Boolean  @default(false)
   coachId     String
   coach       User     @relation(fields: [coachId], references: [id])
 
   thumbnail   String?
   videoUrl    String?
-  materials   Json?
+  materials   String?  // JSON as string
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -262,8 +263,8 @@ model SupportTicket {
   user        User     @relation(fields: [userId], references: [id])
 
   subject     String
-  status      TicketStatus @default(OPEN)
-  priority    TicketPriority @default(MEDIUM)
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
 
   assignedTo  String?
   resolvedAt  DateTime?
@@ -304,7 +305,7 @@ model Referral {
   referred    User     @relation("Referred", fields: [referredId], references: [id])
 
   code        String   @unique
-  status      ReferralStatus @default(PENDING)
+  status      String   @default("PENDING") // PENDING, COMPLETED, EXPIRED
   reward      Float    @default(0)
 
   createdAt   DateTime @default(now())
@@ -321,102 +322,10 @@ model Notification {
 
   title       String
   message     String
-  type        NotificationType @default(INFO)
+  type        String   @default("INFO") // INFO, WARNING, SUCCESS, ERROR
   isRead      Boolean  @default(false)
 
   createdAt   DateTime @default(now())
 
   @@map("notifications")
-}
-
-// Enums
-enum Role {
-  TRAINEE
-  COACH
-  ADMIN
-}
-
-enum SessionStatus {
-  SCHEDULED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  NO_SHOW
-}
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-  REFUNDED
-}
-
-enum PaymentMethod {
-  ZAINCASH
-  VOUCHER
-  CARD
-  BANK_TRANSFER
-  FASTPAY
-  KICARD
-  STC_PAY
-  NAPAY
-  TAMARA
-  TABBY
-  CIB
-  ENAS
-  VODAFONE_CASH
-  ORANGE_MONEY
-  FALCON
-  PAYMOB
-  Fawry
-  MADA
-  APPLE_PAY
-  GOOGLE_PAY
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
-  CANCELLED
-}
-
-enum CourseLevel {
-  BEGINNER
-  INTERMEDIATE
-  ADVANCED
-}
-
-enum TicketStatus {
-  OPEN
-  IN_PROGRESS
-  RESOLVED
-  CLOSED
-}
-
-enum TicketPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-enum ReferralStatus {
-  PENDING
-  COMPLETED
-  EXPIRED
-}
-
-enum TransactionType {
-  CREDIT
-  DEBIT
-}
-
-enum NotificationType {
-  INFO
-  WARNING
-  SUCCESS
-  ERROR
 }

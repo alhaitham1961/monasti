@@ -462,4 +462,172 @@ router.get('/stats', requireAdmin, async (req, res) => {
   }
 });
 
+// ============================================================
+// PAYMENT VERIFICATION (admin with payments.manage permission)
+// ============================================================
+
+// List pending payments for manual verification
+router.get('/payments/pending', requirePermission(PERMISSIONS.PAYMENTS_MANAGE), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, method } = req.query;
+    const skip = (page - 1) * limit;
+
+    const where = { status: 'PENDING' };
+    if (method) {
+      where.method = method;
+    }
+
+    const [payments, total] = await Promise.all([
+      prisma.payment.findMany({
+        where,
+        include: {
+          booking: {
+            include: {
+              session: {
+                include: {
+                  coach: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      email: true
+                    }
+                  }
+                }
+              },
+              trainee: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  email: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: parseInt(skip),
+        take: parseInt(limit)
+      }),
+      prisma.payment.count({ where })
+    ]);
+
+    res.json({
+      payments,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('List pending payments error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify payment (admin with payments.manage permission)
+router.patch('/payments/:paymentId/verify', requirePermission(PERMISSIONS.PAYMENTS_MANAGE), [
+  body('status').isIn(['COMPLETED', 'FAILED', 'CANCELLED']),
+  body('notes').optional().isString()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: errors.array()
+      });
+    }
+
+    const { status, notes } = req.body;
+
+    const payment = await prisma.payment.findUnique({
+      where: { id: req.params.paymentId },
+      include: {
+        booking: {
+          include: {
+            session: true,
+            trainee: true
+          }
+        }
+      }
+    });
+
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    if (payment.status !== 'PENDING') {
+      return res.status(400).json({ error: 'Payment is not in pending status' });
+    }
+
+    // Update payment status
+    const updatedPayment = await prisma.payment.update({
+      where: { id: req.params.paymentId },
+      data: {
+        status,
+        notes,
+        updatedAt: new Date()
+      }
+    });
+
+    // If payment is completed, update booking status and add to wallet
+    if (status === 'COMPLETED') {
+      await prisma.booking.update({
+        where: { id: payment.bookingId },
+        data: { status: 'CONFIRMED' }
+      });
+
+      // Add payment amount to trainee's wallet
+      await prisma.wallet.upsert({
+        where: { userId: payment.booking.traineeId },
+        update: {
+          balance: {
+            increment: payment.amount
+          }
+        },
+        create: {
+          userId: payment.booking.traineeId,
+          balance: payment.amount
+        }
+      });
+
+      // Create transaction record
+      await prisma.transaction.create({
+        data: {
+          walletId: payment.booking.traineeId,
+          amount: payment.amount,
+          type: 'CREDIT',
+          description: `تم إيداع مبلغ ${payment.amount} من حجز جلسة`
+        }
+      });
+    }
+
+    // Send notification to trainee
+    if (payment.booking.trainee) {
+      await prisma.notification.create({
+        data: {
+          userId: payment.booking.traineeId,
+          title: status === 'COMPLETED' ? 'تم تأكيد دفعتك' : 'تم رفض دفعتك',
+          message: status === 'COMPLETED' 
+            ? `تم تأكيد دفعتك بنجاح بقيمة ${payment.amount} ${payment.booking.session.currency === 'IQD' ? 'د.ع' : '$'}`
+            : `تم رفض دفعتك. ${notes || 'يرجى التواصل مع الدعم الفني'}`,
+          type: status === 'COMPLETED' ? 'SUCCESS' : 'ERROR'
+        }
+      });
+    }
+
+    res.json({
+      message: `Payment ${status} successfully`,
+      payment: updatedPayment
+    });
+
+  } catch (error) {
+    console.error('Verify payment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

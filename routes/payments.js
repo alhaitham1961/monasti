@@ -69,7 +69,7 @@ router.get('/', requireRole('ADMIN'), async (req, res) => {
 router.post('/', [
   body('bookingId').notEmpty(),
   body('method').isIn(['ZAINCASH', 'VOUCHER', 'CARD', 'BANK_TRANSFER', 'FASTPAY', 'KICARD', 'STC_PAY', 'NAPAY', 'TAMARA', 'Tabby', 'CIB', 'ENAS']),
-  body('amount').isFloat({ min: 0 })
+  body('amount').isInt({ min: 0 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -104,7 +104,7 @@ router.post('/', [
     }
 
     // Check payment amount matches booking amount
-    if (amount !== booking.amount) {
+    if (parseInt(amount) !== booking.amount) {
       return res.status(400).json({ error: 'Payment amount does not match booking amount' });
     }
 
@@ -115,9 +115,18 @@ router.post('/', [
 
     switch (method) {
       case 'ZAINCASH':
-        // Simulate ZainCash payment processing
+        // Manual ZainCash payment - trainee transfers to platform wallet
+        // Platform wallet: 9647802851933
+        // Admin verifies receipt manually
         externalId = `ZC_${Date.now()}`;
-        paymentStatus = 'COMPLETED';
+        paymentStatus = 'PENDING'; // Requires manual verification by admin
+        metadata = JSON.stringify({
+          gateway: 'ZainCash',
+          walletNumber: '9647802851933',
+          currency: 'IQD',
+          type: 'manual',
+          instructions: 'قم بتحويل المبلغ إلى محفظة ZainCash رقم 9647802851933 ثم أرسل إثبات الدفع'
+        });
         break;
 
       case 'VOUCHER':
@@ -355,6 +364,25 @@ router.post('/:id/verify', authenticateToken, [
         where: { id: payment.bookingId },
         data: { status: 'CONFIRMED' }
       });
+
+      // Add commission to coach wallet
+      const booking = await prisma.booking.findUnique({
+        where: { id: payment.bookingId },
+        include: { session: true }
+      });
+
+      if (booking) {
+        const coachWallet = await prisma.wallet.findUnique({
+          where: { userId: booking.session.coachId }
+        });
+
+        if (coachWallet) {
+          await prisma.wallet.update({
+            where: { userId: booking.session.coachId },
+            data: { balance: coachWallet.balance + booking.commission }
+          });
+        }
+      }
     }
 
     res.json({
@@ -364,6 +392,49 @@ router.post('/:id/verify', authenticateToken, [
 
   } catch (error) {
     console.error('Verify payment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get pending manual payments (admin only)
+router.get('/pending', requireRole('ADMIN'), async (req, res) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      where: {
+        status: 'PENDING',
+        method: { in: ['ZAINCASH', 'BANK_TRANSFER'] }
+      },
+      include: {
+        booking: {
+          include: {
+            session: {
+              include: {
+                coach: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true
+                  }
+                }
+              }
+            },
+            trainee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ payments });
+  } catch (error) {
+    console.error('Get pending payments error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
