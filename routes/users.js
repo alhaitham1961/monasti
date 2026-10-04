@@ -110,16 +110,12 @@ router.put('/profile/coach', authenticateToken, [
       return res.status(403).json({ error: 'Only coaches can update coach profile' });
     }
 
-    // Convert specialization array to JSON string for SQLite
-    const specializationJson = Array.isArray(specialization)
-      ? JSON.stringify(specialization)
-      : specialization;
-
+    // specialization is String[] in PostgreSQL - pass array directly
     const updatedProfile = await prisma.profile.upsert({
       where: { userId: req.user.userId },
       update: {
         ...(title && { title }),
-        ...(specializationJson && { specialization: specializationJson }),
+        ...(specialization && { specialization }),
         ...(experience !== undefined && { experience }),
         ...(hourlyRate !== undefined && { hourlyRate }),
         ...(bio && { bio }),
@@ -129,7 +125,7 @@ router.put('/profile/coach', authenticateToken, [
       create: {
         userId: req.user.userId,
         title,
-        specialization: specializationJson || '[]',
+        specialization: specialization || [],
         experience,
         hourlyRate,
         bio,

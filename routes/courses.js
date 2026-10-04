@@ -170,11 +170,7 @@ router.post('/', authenticateToken, [
       return res.status(403).json({ error: 'Only coaches can create courses' });
     }
 
-    // Convert materials array to JSON string for SQLite
-    const materialsJson = Array.isArray(materials)
-      ? JSON.stringify(materials)
-      : materials;
-
+    // materials is Json in PostgreSQL - pass array directly
     const course = await prisma.course.create({
       data: {
         title,
@@ -185,7 +181,7 @@ router.post('/', authenticateToken, [
         level,
         thumbnail,
         videoUrl,
-        materials: materialsJson,
+        materials,
         coachId: req.user.userId
       },
       include: {
@@ -255,7 +251,7 @@ router.put('/:id', authenticateToken, [
     if (level !== undefined) updateData.level = level;
     if (thumbnail !== undefined) updateData.thumbnail = thumbnail;
     if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
-    if (materials !== undefined) updateData.materials = Array.isArray(materials) ? JSON.stringify(materials) : materials;
+    if (materials !== undefined) updateData.materials = materials;
 
     const updatedCourse = await prisma.course.update({
       where: { id: req.params.id },

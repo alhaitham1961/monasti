@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -23,9 +23,9 @@ model User {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  role        String   @default("TRAINEE")
+  role        Role     @default(TRAINEE)
   isOwner     Boolean  @default(false)
-  permissions String   @default("[]")  // JSON array of granted permissions (for partial admin)
+  permissions String   @default("[]")  // JSON array of granted permissions
   currency    String   @default("IQD")  // IQD or USD
   profile     Profile?
   wallet      Wallet?
@@ -52,10 +52,10 @@ model Profile {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title       String?
-  specialization String   @default("[]")  // JSON array as string
+  specialization String[]
   experience  Int?
   education   String?
-  certifications String @default("[]")    // JSON array as string
+  certifications String[]
   hourlyRate  Float?
   bio         String?
   location    String?
@@ -95,7 +95,7 @@ model Transaction {
   wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   amount      Float
-  type        String   @default("CREDIT")
+  type        TransactionType @default(CREDIT)
   description String?
 
   createdAt   DateTime @default(now())
@@ -108,7 +108,7 @@ model Voucher {
   id          String   @id @default(cuid())
   code        String   @unique
   amount      Float
-  currency    String   @default("IQD")  // IQD or USD
+  currency    String   @default("IQD")
   isUsed      Boolean  @default(false)
   usedBy      String?
   usedAt      DateTime?
@@ -128,14 +128,14 @@ model Session {
   description String
   duration    Int      // in minutes
   price       Float
-  currency    String   @default("IQD")  // IQD or USD
+  currency    String   @default("IQD")
   maxParticipants Int?
   isOnline    Boolean  @default(true)
   location    String?
   coachId     String
   coach       User     @relation(fields: [coachId], references: [id])
 
-  status      String   @default("SCHEDULED")
+  status      SessionStatus @default(SCHEDULED)
   startTime   DateTime
   endTime     DateTime
 
@@ -157,8 +157,8 @@ model Booking {
   traineeId   String
   trainee     User     @relation(fields: [traineeId], references: [id])
 
-  status      String   @default("PENDING")
-  paymentMethod String
+  status      BookingStatus @default(PENDING)
+  paymentMethod PaymentMethod
   amount      Float
   commission  Float
   notes       String?
@@ -179,11 +179,11 @@ model Payment {
   booking     Booking  @relation(fields: [bookingId], references: [id])
 
   amount      Float
-  method      String
-  status      String   @default("PENDING")
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
   transactionId String?
   externalId String?
-  metadata    String?  // JSON as string
+  metadata    Json?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -217,16 +217,16 @@ model Course {
   title       String
   description String
   price       Float
-  currency    String   @default("IQD")  // IQD or USD
+  currency    String   @default("IQD")
   duration    Int      // in minutes
-  level       String   @default("BEGINNER")
+  level       CourseLevel @default(BEGINNER)
   isPublished Boolean  @default(false)
   coachId     String
   coach       User     @relation(fields: [coachId], references: [id])
 
   thumbnail   String?
   videoUrl    String?
-  materials   String?  // JSON as string
+  materials   Json?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -262,8 +262,8 @@ model SupportTicket {
   user        User     @relation(fields: [userId], references: [id])
 
   subject     String
-  status      String   @default("OPEN")
-  priority    String   @default("MEDIUM")
+  status      TicketStatus @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
 
   assignedTo  String?
   resolvedAt  DateTime?
@@ -304,7 +304,7 @@ model Referral {
   referred    User     @relation("Referred", fields: [referredId], references: [id])
 
   code        String   @unique
-  status      String   @default("PENDING")
+  status      ReferralStatus @default(PENDING)
   reward      Float    @default(0)
 
   createdAt   DateTime @default(now())
@@ -321,10 +321,102 @@ model Notification {
 
   title       String
   message     String
-  type        String   @default("INFO")
+  type        NotificationType @default(INFO)
   isRead      Boolean  @default(false)
 
   createdAt   DateTime @default(now())
 
   @@map("notifications")
+}
+
+// Enums
+enum Role {
+  TRAINEE
+  COACH
+  ADMIN
+}
+
+enum SessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  ZAINCASH
+  VOUCHER
+  CARD
+  BANK_TRANSFER
+  FASTPAY
+  KICARD
+  STC_PAY
+  NAPAY
+  TAMARA
+  TABBY
+  CIB
+  ENAS
+  VODAFONE_CASH
+  ORANGE_MONEY
+  FALCON
+  PAYMOB
+  Fawry
+  MADA
+  APPLE_PAY
+  GOOGLE_PAY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+  ERROR
 }

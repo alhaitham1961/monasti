@@ -285,7 +285,7 @@ router.post('/', [
         method,
         status: paymentStatus,
         externalId,
-        metadata: JSON.stringify(metadata)
+        metadata
       }
     });
 

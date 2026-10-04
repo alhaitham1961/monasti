@@ -43,7 +43,7 @@ const seedUsers = [
 const seedCoaches = [
   {
     title: 'مدرب تطوير الأعمال',
-    specialization: JSON.stringify(['تطوير الأعمال', 'ريادة الأعمال', 'التسويق الرقمي']),
+    specialization: ['تطوير الأعمال', 'ريادة الأعمال', 'التسويق الرقمي'],
     experience: 5,
     bio: 'مدرب متخصص في تطوير الأعمال وريادة المشاريع الناشئة',
     hourlyRate: 50,

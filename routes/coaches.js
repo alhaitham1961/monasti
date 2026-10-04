@@ -34,17 +34,17 @@ router.get('/', async (req, res) => {
         {
           profile: {
             OR: [
-              { title: { contains: search } },
-              { bio: { contains: search } },
-              { specialization: { contains: search } }
+              { title: { contains: search, mode: 'insensitive' } },
+              { bio: { contains: search, mode: 'insensitive' } },
+              { specialization: { has: search } }
             ]
           }
         },
         {
-          firstName: { contains: search }
+          firstName: { contains: search, mode: 'insensitive' }
         },
         {
-          lastName: { contains: search }
+          lastName: { contains: search, mode: 'insensitive' }
         }
       ];
     }
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
     if (specialization) {
       where.profile = {
         ...where.profile,
-        specialization: { contains: specialization }
+        specialization: { has: specialization }
       };
     }
 
