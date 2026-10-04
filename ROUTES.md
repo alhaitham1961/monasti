@@ -1,4 +1,4 @@
-# Routes - منصّتي CoachHub
+# Routes - منصّتي monasti
 
 ## Public Routes (غير مصادق)
 | Path | Component | Description | Access |

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: monati
+    name: monasti
     runtime: node
     plan: free
     buildCommand: npm install
@@ -15,13 +15,13 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: monati-db
+          name: monasti-db
           property: connectionString
       - key: ALLOWED_ORIGINS
         value: https://monati.onrender.com
 
 databases:
-  - name: monati-db
+  - name: monasti-db
     plan: free
-    databaseName: monati
+    databaseName: monasti
     user: monati

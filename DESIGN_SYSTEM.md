@@ -1,4 +1,4 @@
-# Design System - منصّتي CoachHub
+# Design System - منصّتي monasti
 
 ## الألوان (Color Palette)
 ### الألوان الرئيسية

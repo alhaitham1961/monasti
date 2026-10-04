@@ -1,4 +1,4 @@
-# Tech Stack - منصّتي CoachHub
+# Tech Stack - منصّتي monasti
 
 ## Backend
 - **Runtime**: Node.js (18.x+)

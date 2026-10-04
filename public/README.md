@@ -1,6 +1,6 @@
-# CoachHub Marketplace - Frontend
+# monasti - Frontend
 
-This folder contains the frontend web application for the CoachHub Marketplace platform.
+This folder contains the frontend web application for the monasti platform.
 
 ## Structure
 - `index.html` - Main landing page

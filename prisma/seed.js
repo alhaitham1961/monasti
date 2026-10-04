@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 // Seed data for testing
 const seedUsers = [
   {
-    email: 'admin@coachhub.com',
+    email: 'admin@monati.com',
     password: bcrypt.hashSync('admin123', 10),
     firstName: 'Admin',
     lastName: 'User',
@@ -19,7 +19,7 @@ const seedUsers = [
     isActive: true,
   },
   {
-    email: 'coach1@coachhub.com',
+    email: 'coach1@monati.com',
     password: bcrypt.hashSync('coach123', 10),
     firstName: 'Ahmed',
     lastName: 'Mohammed',
@@ -29,7 +29,7 @@ const seedUsers = [
     isActive: true,
   },
   {
-    email: 'trainee1@coachhub.com',
+    email: 'trainee1@monati.com',
     password: bcrypt.hashSync('trainee123', 10),
     firstName: 'Fatima',
     lastName: 'Ali',
@@ -126,9 +126,9 @@ async function main() {
 
   // Get created users
   const users = await prisma.user.findMany();
-  const adminUser = users.find(u => u.email === 'admin@coachhub.com');
-  const coachUser = users.find(u => u.email === 'coach1@coachhub.com');
-  const traineeUser = users.find(u => u.email === 'trainee1@coachhub.com');
+  const adminUser = users.find(u => u.email === 'admin@monati.com');
+  const coachUser = users.find(u => u.email === 'coach1@monati.com');
+  const traineeUser = users.find(u => u.email === 'trainee1@monati.com');
 
   // Create profiles
   console.log('Creating profiles...');

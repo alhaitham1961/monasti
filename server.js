@@ -167,7 +167,7 @@ app.use('*', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
-  console.log(`🚀 CoachHub Marketplace server running on port ${PORT}`);
+  console.log(`🚀 monasti server running on port ${PORT}`);
 });
 
 module.exports = app;

@@ -1,4 +1,4 @@
-# Data Model - منصّتي CoachHub
+# Data Model - منصّتي monasti
 
 ## Users (المستخدمون)
 ```sql
