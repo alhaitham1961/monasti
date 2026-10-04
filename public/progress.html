@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصتي | لوحة تقدم المشروع</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+      --bg: #0f172a; --surface: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem; }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 2.5rem; }
+    .header h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .header h1 span { color: var(--primary); }
+    .header .subtitle { color: var(--muted); font-size: 1.1rem; }
+    .overall-progress { margin: 2rem auto; max-width: 400px; }
+    .overall-progress .label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 700; }
+    .overall-progress .bar { height: 24px; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    .overall-progress .fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--success)); border-radius: 12px; transition: width 1s ease; width: 0; }
+    .overall-progress .pct { font-size: 1.5rem; font-weight: 800; color: var(--success); }
+
+    /* Status cards */
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .status-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; transition: all 0.3s; }
+    .status-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+    .status-card .icon { font-size: 2rem; margin-bottom: 0.75rem; }
+    .status-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .status-card .desc { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+    .status-card .progress { height: 10px; background: #0f172a; border-radius: 5px; overflow: hidden; margin-bottom: 0.5rem; }
+    .status-card .fill { height: 100%; border-radius: 5px; transition: width 1s ease; width: 0; }
+    .status-card .pct { font-size: 1.2rem; font-weight: 800; }
+    .status-card.done .fill { background: var(--success); }
+    .status-card.done .pct { color: var(--success); }
+    .status-card.wip .fill { background: var(--warning); }
+    .status-card.wip .pct { color: var(--warning); }
+    .status-card.todo .fill { background: var(--danger); }
+    .status-card.todo .pct { color: var(--danger); }
+    .status-card .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; margin-top: 0.5rem; }
+    .badge.done { background: rgba(16,185,129,0.2); color: var(--success); }
+    .badge.wip { background: rgba(245,158,11,0.2); color: var(--warning); }
+    .badge.todo { background: rgba(239,68,68,0.2); color: var(--danger); }
+
+    /* Live status */
+    .live-status { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
+    .live-status h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .live-status .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .live-status .row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+    .live-status .row:last-child { border-bottom: none; }
+    .live-status .row .key { color: var(--muted); }
+    .live-status .row .val { font-weight: 700; }
+    .live-status .val.ok { color: var(--success); }
+    .live-status .val.warn { color: var(--warning); }
+
+    /* Steps */
+    .steps { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; }
+    .steps h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; }
+    .step { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+    .step:last-child { border-bottom: none; }
+    .step .num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; flex-shrink: 0; }
+    .step.done .num { background: var(--success); color: white; }
+    .step.wip .num { background: var(--warning); color: white; }
+    .step.todo .num { background: #334155; color: var(--muted); }
+    .step .text { flex: 1; }
+    .step .text .title { font-weight: 700; }
+    .step .text .sub { color: var(--muted); font-size: 0.85rem; }
+    .step .status { font-size: 0.85rem; font-weight: 700; }
+    .step.done .status { color: var(--success); }
+    .step.wip .status { color: var(--warning); }
+    .step.todo .status { color: var(--muted); }
+
+    /* Footer */
+    .footer { text-align: center; margin-top: 2rem; color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>منص<span>تي</span> | لوحة تقدم المشروع</h1>
+      <div class="subtitle">حالة المنصة الحية — تحديث تلقائي</div>
+    </div>
+
+    <!-- Overall progress -->
+    <div class="overall-progress">
+      <div class="label">
+        <span>الإنجاز الكلي</span>
+        <span class="pct" id="overallPct">0%</span>
+      </div>
+      <div class="bar"><div class="fill" id="overallFill"></div></div>
+    </div>
+
+    <!-- Status cards -->
+    <div class="status-grid" id="statusGrid">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- Live status -->
+    <div class="live-status">
+      <h3><span class="dot"></span> الحالة الحية للخادم</h3>
+      <div class="row"><span class="key">حالة الخادم</span><span class="val" id="serverStatus">...جاري الفحص</span></div>
+      <div class="row"><span class="key">عدد الـ API routes</span><span class="val" id="routeCount">...</span></div>
+      <div class="row"><span class="key">عدد الملفات</span><span class="val" id="fileCount">...</span></div>
+      <div class="row"><span class="key">قاعدة البيانات</span><span class="val" id="dbStatus">...</span></div>
+      <div class="row"><span class="key">الواجهة الأمامية</span><span class="val" id="frontendStatus">...</span></div>
+      <div class="row"><span class="key">PWA (قابل للتثبيت)</span><span class="val" id="pwaStatus">...</span></div>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps">
+      <h3>خطوات الإنجاز</h3>
+      <div id="stepsList">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <div class="footer">© 2026 منصتي — لوحة تقدم تفاعلية</div>
+  </div>
+
+  <script>
+    // ===== DATA =====
+    const modules = [
+      { icon: '⚙️', name: 'Backend API', desc: '14 route كاملة (auth, users, coaches, sessions, bookings, payments, courses, reviews, wallets, vouchers, notifications, support, admin, currency)', pct: 100, status: 'done' },
+      { icon: '🗄️', name: 'قاعدة البيانات', desc: 'SQLite + Prisma + بيانات تجريبية (3 مستخدمين، 4 جلسات، 3 قسائم)', pct: 100, status: 'done' },
+      { icon: '🛡️', name: 'الأمان', desc: 'JWT + bcrypt + rate limiting + حماية mass assignment + نظام صلاحيات Owner/Admin/جزئية', pct: 100, status: 'done' },
+      { icon: '💳', name: 'طرق الدفع العربية', desc: '19 طريقة: ZainCash, FastPay, KiCard, STC Pay, Tamara, Tabby, Vodafone Cash, Fawry, Apple Pay, Google Pay...', pct: 100, status: 'done' },
+      { icon: '💱', name: 'دعم العملتين', desc: 'IQD + USD مع تحويل فوري بين 16 عملة عربية', pct: 100, status: 'done' },
+      { icon: '🎨', name: 'الواجهة الأمامية', desc: 'صفحة رئيسية احترافية بتصميم 3D دوّار، متجاوبة، مع تسجيل/دخول', pct: 100, status: 'done' },
+      { icon: '📱', name: 'PWA (قابل للتثبيت)', desc: 'manifest.json + service worker — قابل للتثبيت على الحاسوب والموبايل', pct: 100, status: 'done' },
+      { icon: '🎯', name: 'أيقونة 3D', desc: 'أيقونة SVG احترافية بحرف "م" ذهبي متحرك', pct: 100, status: 'done' },
+      { icon: '🧪', name: 'الاختبارات', desc: 'اختبارات شاملة للـ API والأمان', pct: 70, status: 'wip' },
+      { icon: '🚀', name: 'الإطلاق والمشاركة', desc: 'المشاركة مع الشركاء قبل الإطلاق على الويب', pct: 0, status: 'todo' }
+    ];
+
+    const steps = [
+      { title: 'بناء Backend API', sub: '14 route كاملة', status: 'done' },
+      { title: 'إعداد قاعدة البيانات', sub: 'SQLite + Prisma + seed', status: 'done' },
+      { title: 'إغلاق الثغرات الأمنية', sub: 'mass assignment, rate limiting, صلاحيات', status: 'done' },
+      { title: 'إضافة طرق الدفع العربية', sub: '19 طريقة دفع', status: 'done' },
+      { title: 'دعم العملتين + التحويل', sub: 'IQD + USD + 16 عملة', status: 'done' },
+      { title: 'بناء الواجهة الأمامية 3D', sub: 'صفحة رئيسية احترافية', status: 'done' },
+      { title: 'إعداد PWA', sub: 'manifest + service worker', status: 'done' },
+      { title: 'اختبار شامل', sub: 'فحص الأمان والأداء', status: 'wip' },
+      { title: 'المشاركة مع الشركاء', sub: 'قبل الإطلاق على الويب', status: 'todo' }
+    ];
+
+    // ===== RENDER =====
+    function renderStatusCards() {
+      const grid = document.getElementById('statusGrid');
+      grid.innerHTML = modules.map(m => `
+        <div class="status-card ${m.status}">
+          <div class="icon">${m.icon}</div>
+          <h3>${m.name}</h3>
+          <div class="desc">${m.desc}</div>
+          <div class="progress"><div class="fill" data-pct="${m.pct}"></div></div>
+          <div class="pct">${m.pct}%</div>
+          <span class="badge ${m.status}">${m.status === 'done' ? 'مكتمل' : m.status === 'wip' ? 'قيد الإنجاز' : 'لم يبدأ'}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderSteps() {
+      const list = document.getElementById('stepsList');
+      list.innerHTML = steps.map((s, i) => `
+        <div class="step ${s.status}">
+          <div class="num">${i + 1}</div>
+          <div class="text">
+            <div class="title">${s.title}</div>
+            <div class="sub">${s.sub}</div>
+          </div>
+          <div class="status">${s.status === 'done' ? '✅ مكتمل' : s.status === 'wip' ? '⏳ قيد الإنجاز' : '⬜ لم يبدأ'}</div>
+        </div>
+      `).join('');
+    }
+
+    // ===== ANIMATE =====
+    function animate() {
+      // Overall
+      const total = modules.reduce((s, m) => s + m.pct, 0) / modules.length;
+      document.getElementById('overallPct').textContent = Math.round(total) + '%';
+      document.getElementById('overallFill').style.width = total + '%';
+
+      // Cards
+      document.querySelectorAll('.status-card .fill').forEach(fill => {
+        setTimeout(() => { fill.style.width = fill.dataset.pct + '%'; }, 200);
+      });
+    }
+
+    // ===== LIVE STATUS =====
+    async function checkServer() {
+      try {
+        const res = await fetch('http://localhost:3000/health');
+        const data = await res.json();
+        document.getElementById('serverStatus').textContent = '✅ يعمل (v' + data.version + ')';
+        document.getElementById('serverStatus').className = 'val ok';
+      } catch (e) {
+        document.getElementById('serverStatus').textContent = '❌ متوقف';
+        document.getElementById('serverStatus').className = 'val warn';
+      }
+    }
+
+    // ===== INIT =====
+    renderStatusCards();
+    renderSteps();
+    animate();
+    checkServer();
+
+    // Refresh server status every 5s
+    setInterval(checkServer, 5000);
+  </script>
+</body>
+</html>

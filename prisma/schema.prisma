@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User Model
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  phone       String
+  avatar      String?
+  bio         String?
+  language    String   @default("ar")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  role        String   @default("TRAINEE")
+  isOwner     Boolean  @default(false)
+  permissions String   @default("[]")  // JSON array of granted permissions (for partial admin)
+  currency    String   @default("IQD")  // IQD or USD
+  profile     Profile?
+  wallet      Wallet?
+  bookings    Booking[]
+  reviews     Review[]      @relation("Reviewer")
+  reviewees   Review[]      @relation("Reviewee")
+  sessions    Session[]
+  courses     Course[]
+  enrollments Enrollment[]
+  supportTickets SupportTicket[]
+  supportMessages SupportMessage[]
+  referrals   Referral[]    @relation("Referrer")
+  referred    Referral[]    @relation("Referred")
+  notifications Notification[]
+  createdVouchers Voucher[]  @relation("VoucherCreator")
+
+  @@map("users")
+}
+
+// Profile Model
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String?
+  specialization String   @default("[]")  // JSON array as string
+  experience  Int?
+  education   String?
+  certifications String @default("[]")    // JSON array as string
+  hourlyRate  Float?
+  bio         String?
+  location    String?
+  timezone    String?
+  isVerified  Boolean  @default(false)
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+// Wallet Model
+model Wallet {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  balance     Float    @default(0)
+  currency    String   @default("IQD")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  transactions Transaction[]
+
+  @@map("wallets")
+}
+
+// Transaction Model
+model Transaction {
+  id          String   @id @default(cuid())
+  walletId    String
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  amount      Float
+  type        String   @default("CREDIT")
+  description String?
+
+  createdAt   DateTime @default(now())
+
+  @@map("transactions")
+}
+
+// Voucher Model
+model Voucher {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  amount      Float
+  currency    String   @default("IQD")  // IQD or USD
+  isUsed      Boolean  @default(false)
+  usedBy      String?
+  usedAt      DateTime?
+  maxUses     Int      @default(1)
+  expiresAt   DateTime?
+  createdBy   String?
+  creator     User?    @relation("VoucherCreator", fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("vouchers")
+}
+
+// Session Model
+model Session {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  duration    Int      // in minutes
+  price       Float
+  currency    String   @default("IQD")  // IQD or USD
+  maxParticipants Int?
+  isOnline    Boolean  @default(true)
+  location    String?
+  coachId     String
+  coach       User     @relation(fields: [coachId], references: [id])
+
+  status      String   @default("SCHEDULED")
+  startTime   DateTime
+  endTime     DateTime
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  bookings    Booking[]
+  reviews     Review[]
+
+  @@map("sessions")
+}
+
+// Booking Model
+model Booking {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id])
+  traineeId   String
+  trainee     User     @relation(fields: [traineeId], references: [id])
+
+  status      String   @default("PENDING")
+  paymentMethod String
+  amount      Float
+  commission  Float
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  payments    Payment[]
+
+  @@map("bookings")
+}
+
+// Payment Model
+model Payment {
+  id          String   @id @default(cuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+
+  amount      Float
+  method      String
+  status      String   @default("PENDING")
+  transactionId String?
+  externalId String?
+  metadata    String?  // JSON as string
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("payments")
+}
+
+// Review Model
+model Review {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id])
+  reviewerId  String
+  reviewer    User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  revieweeId  String
+  reviewee    User     @relation("Reviewee", fields: [revieweeId], references: [id])
+
+  rating      Int      // 1-5
+  comment     String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([sessionId, reviewerId])
+  @@map("reviews")
+}
+
+// Course Model
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  currency    String   @default("IQD")  // IQD or USD
+  duration    Int      // in minutes
+  level       String   @default("BEGINNER")
+  isPublished Boolean  @default(false)
+  coachId     String
+  coach       User     @relation(fields: [coachId], references: [id])
+
+  thumbnail   String?
+  videoUrl    String?
+  materials   String?  // JSON as string
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+// Enrollment Model
+model Enrollment {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  progress    Int      @default(0)
+  completedAt DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([courseId, userId])
+  @@map("enrollments")
+}
+
+// Support Ticket Model
+model SupportTicket {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  subject     String
+  status      String   @default("OPEN")
+  priority    String   @default("MEDIUM")
+
+  assignedTo  String?
+  resolvedAt  DateTime?
+  resolution  String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  messages    SupportMessage[]
+
+  @@map("support_tickets")
+}
+
+// Support Message Model
+model SupportMessage {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id])
+  senderId    String
+  sender      User     @relation(fields: [senderId], references: [id])
+
+  content     String
+  isRead      Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("support_messages")
+}
+
+// Referral Model
+model Referral {
+  id          String   @id @default(cuid())
+  referrerId  String
+  referrer    User     @relation("Referrer", fields: [referrerId], references: [id])
+  referredId  String
+  referred    User     @relation("Referred", fields: [referredId], references: [id])
+
+  code        String   @unique
+  status      String   @default("PENDING")
+  reward      Float    @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("referrals")
+}
+
+// Notification Model
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  title       String
+  message     String
+  type        String   @default("INFO")
+  isRead      Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@map("notifications")
+}
